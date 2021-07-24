@@ -21,7 +21,7 @@ const accessLogStream = fs.WriteStream(path.join(__dirname, 'access.log'), {
 app.use(morgan('combined', {stream: accessLogStream}));
 
 app.use(auth);
-app.get('/', (req, res) => res.send({STATUS: 'API IS RUNNING'}));
+app.get('/', (req, res) => res.send({STATUS: 'API is running...'}));
 
 app.put('/post-image', async (req, res, next) => {
   if (!req.isAuth) {
@@ -58,7 +58,7 @@ app.use(
   })
 );
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   try {
     console.log(`API is running on port:${PORT}`);
