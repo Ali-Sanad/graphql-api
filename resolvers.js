@@ -4,7 +4,7 @@ const validator = require('validator');
 
 const User = require('./DataBase/models/user');
 const Post = require('./DataBase/models/post');
-const {clearImage} = require('./utils/clearImage');
+require('dotenv').config();
 
 module.exports = {
   createUser: async ({userInput}, req) => {
@@ -75,7 +75,7 @@ module.exports = {
         userId: user._id.toString(),
         email: user.email,
       },
-      'mogiwara',
+      process.env.SECRET,
       {expiresIn: '1hr'}
     );
 
@@ -274,10 +274,12 @@ module.exports = {
       throw error;
     }
     console.log('post.imageUrl=', post.imageUrl);
-    clearImage(post.imageUrl);
+    // clearImage(post.imageUrl);
     await Post.findByIdAndRemove(id);
     const user = await User.findById(req.userId);
     user.posts.pull(id);
+    // const newPosts = user.posts.filter((p) => p._id.toString() !== id);
+    // user.posts = newPosts;
     await user.save();
     return true;
   },

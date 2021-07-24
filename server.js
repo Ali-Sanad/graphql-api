@@ -6,55 +6,37 @@ const auth = require('./middlewares/auth');
 const {graphqlHTTP} = require('express-graphql');
 const graphqlSchema = require('./schema');
 const graphqlResolver = require('./resolvers');
+const path = require('path');
+const fs = require('fs');
+const {cloudinary} = require('./utils/cloudinary');
+const morgan = require('morgan');
 
 connectDB();
 app.use(cors());
-
-/*multer to upload images to the server*/
-const path = require('path');
-const multer = require('multer');
-const {clearImage} = require('./utils/clearImage');
-
-const fileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'images');
-  },
-  filename: (req, file, cb) => {
-    cb(null, new Date().toISOString().replace(/:/g, '-') + file.originalname);
-  },
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true}));
+const accessLogStream = fs.WriteStream(path.join(__dirname, 'access.log'), {
+  flags: 'a',
 });
+app.use(morgan('combined', {stream: accessLogStream}));
 
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === 'image/png' ||
-    file.mimetype === 'image/jpg' ||
-    file.mimetype === 'image/jpeg'
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
-app.use(express.json()); // application/json
-app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
-app.use('/images', express.static(path.join(__dirname, 'images')));
-
-/** */
 app.use(auth);
+app.get('/', (req, res) => res.send({STATUS: 'API IS RUNNING'}));
 
-app.put('/post-image', (req, res, next) => {
+app.put('/post-image', async (req, res, next) => {
   if (!req.isAuth) {
     throw new Error('Not authenticated!');
   }
-  if (!req.file) {
+  if (!req.body.data) {
     return res.status(200).json({message: 'No file provided!'});
   }
-  if (req.body.oldPath) {
-    clearImage(req.body.oldPath);
-  }
-  return res
-    .status(201)
-    .json({message: 'File stored.', filePath: req.file.filename});
+  const fileStr = req.body.data;
+  const uploadedResponse = await cloudinary.uploader.upload(fileStr, {
+    upload_preset: 'Dojo',
+  });
+  console.log(uploadedResponse);
+  let url = uploadedResponse.secure_url;
+  return res.status(201).json({message: 'File stored.', filePath: url});
 });
 
 app.use(
