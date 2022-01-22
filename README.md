@@ -29,6 +29,6 @@ localhost:5000/graphql
 ```
 
 Live
-``
+```
 https://graphql-api-101.glitch.me/graphql
 ```
